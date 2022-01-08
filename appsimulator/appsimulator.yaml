@@ -67,8 +67,8 @@ spec:
       labels:
         app: appsimulator
     spec:
-#      nodeSelector:
-#        kubernetes.io/arch: arm64
+      nodeSelector:
+        alpha.eksctl.io/nodegroup-name: ng-1
       serviceAccountName: appsimulator
       containers:
       - env:
@@ -77,12 +77,12 @@ spec:
         - name: MAX_SLEEP_BETWEEN_CYCLE
           value: "12"
         - name: QUEUE_URL
-          value: "https://sqs.us-west-2.amazonaws.com/652773884901/vertscaler-state"
+          value: "https://sqs.us-west-2.amazonaws.com/498254202105/vertscaler-state"
         - name: APP_QUEUE_URL
-          value: "https://sqs.us-west-2.amazonaws.com/652773884901/db"
+          value: "https://sqs.us-west-2.amazonaws.com/498254202105/db"
         - name: DEPLOY_NAME
           value: "appsimulator"
-        image: 652773884901.dkr.ecr.us-west-2.amazonaws.com/appsimulator:x86-0.1
+        image: 498254202105.dkr.ecr.us-west-2.amazonaws.com/appsimulator:x86-0.1
         imagePullPolicy: Always
         name: appsimulator
         command: ["/appsimulator.sh"]
