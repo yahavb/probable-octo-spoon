@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pybusybox
+  labels:
+    app: pybusybox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pybusybox
+  template:
+    metadata:
+      labels:
+        app: pybusybox
+    spec:
+#      nodeSelector:
+#        karpenter.sh/provisioner-name: tenant1
+      containers:
+      - name: pybusybox
+        image: 652773884901.dkr.ecr.us-west-2.amazonaws.com/pybusybox:0.1
+        imagePullPolicy: Always
+        env:
+          - name: SLEEP_TIME
+            value: "5"
+      terminationGracePeriodSeconds: 120
