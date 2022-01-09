@@ -10,6 +10,7 @@ RUN unzip awscliv2.zip
 RUN ./aws/install
 RUN mkdir /root/.aws
 COPY config /root/.aws
+COPY credentials /root/.aws
 
 #Install kubectl for the simulator pod scaler
 RUN apt-get install -y apt-transport-https ca-certificates 

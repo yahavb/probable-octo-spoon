@@ -7,10 +7,10 @@ Playing with EKS, Fargate, and Karpenter
 * Create AWS Identity and Access Management (IAM) OpenID Connect (OIDC) provider.
 
 ```
-aws eks describe-cluster --name atvi-arm-us-west-2 --query "cluster.identity.oidc.issuer" --output text
+aws eks describe-cluster --name fg-bliz-us-west-2 --query "cluster.identity.oidc.issuer" --output text
 https://oidc.eks.us-west-2.amazonaws.com/id/F9B0F7368F54F66E058DE79AF6B505C2
 
-$eksctl utils associate-iam-oidc-provider --cluster atvi-arm-us-west-2 --approve
+$eksctl utils associate-iam-oidc-provider --cluster  fg-bliz-us-west-2 --approve
 2022-01-07 14:19:11 [ℹ]  eksctl version 0.70.0
 2022-01-07 14:19:11 [ℹ]  using region us-west-2
 2022-01-07 14:19:12 [ℹ]  will create IAM Open ID Connect provider for cluster "atvi-arm-us-west-2" in "us-west-2"
@@ -23,7 +23,7 @@ $eksctl utils associate-iam-oidc-provider --cluster atvi-arm-us-west-2 --approve
 eksctl create iamserviceaccount \
     --name aws-node \
     --namespace kube-system \
-    --cluster atvi-arm-us-west-2 \
+    --cluster fg-bliz-us-west-2 \
     --attach-policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy \
     --approve \
     --override-existing-serviceaccounts
@@ -33,8 +33,8 @@ eksctl create iamserviceaccount \
 eksctl create addon \
     --name vpc-cni \
     --version latest \
-    --cluster atvi-arm-us-west-2 \
-    --service-account-role-arn arn:aws:iam::652773884901:role/eksctl-atvi-arm-us-west-2-addon-iamserviceac-Role1-1GLKMCV42BPL3 \
+    --cluster fg-bliz-us-west-2 \
+    --service-account-role-arn arn:aws:iam::498254202105:role/eksctl-fg-bliz-us-west-2-addon-iamserviceacc-Role1-1IXWZVWEIAJSF \
     --force
 ```
 
@@ -169,4 +169,28 @@ aws eks create-fargate-profile     --fargate-profile-name coredns     --cluster-
         "tags": {}
     }
 }
+```
+
+
+```
+aws iam attach-role-policy \
+  --policy-arn arn:aws:iam::652773884901:policy/eks-fargate-logging-policy \
+  --role-name AmazonEKSFargatePodExecutionRole
+```
+
+```
+ClusterName=fg-bliz-us-west-2
+RegionName=us-west-2
+FluentBitHttpPort='2020'
+FluentBitReadFromHead='Off'
+[[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On'
+[[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
+curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/'${ClusterName}'/;s/{{region_name}}/'${RegionName}'/;s/{{http_server_toggle}}/"'${FluentBitHttpServer}'"/;s/{{http_server_port}}/"'${FluentBitHttpPort}'"/;s/{{read_from_head}}/"'${FluentBitReadFromHead}'"/;s/{{read_from_tail}}/"'${FluentBitReadFromTail}'"/' | kubectl apply -f - 
+```
+
+
+```
+aws iam attach-role-policy \
+  --policy-arn arn:aws:iam::498254202105:policy/eks-fargate-logging-policy \
+  --role-name AmazonEKSFargatePodExecutionRole
 ```
