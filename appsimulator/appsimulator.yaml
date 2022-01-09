@@ -83,7 +83,6 @@ spec:
         - name: DEPLOY_NAME
           value: "appsimulator"
         image: 652773884901.dkr.ecr.us-west-2.amazonaws.com/appsimulator:x86-0.1
-        #image: 498254202105.dkr.ecr.us-west-2.amazonaws.com/appsimulator:arm64-0.1
         imagePullPolicy: Always
         name: appsimulator
         command: ["/appsimulator.sh"]
