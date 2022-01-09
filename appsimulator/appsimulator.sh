@@ -23,7 +23,8 @@ prev_updates=0
 prev_selects=0
 
 #simulator sine wave range. From $j to 3.14 in 0.1 increments
-_seq=`seq $j 0.021 3.14`
+#_seq=`seq $j 0.021 3.14`
+_seq=`seq $j 0.1 3.14`
 echo "first seq is "$_seq
 while true; do
 for i in $_seq; do
@@ -95,6 +96,7 @@ for i in $_seq; do
   kubectl delete po `kubectl get po | egrep 'Evicted|CrashLoopBackOff|CreateContainerError|ExitCode|OOMKilled|RunContainerError'|awk '{print $1}'`
   sleep $sleeptime"m"
 done
-_seq=`seq 0.01 0.021 3.14`
+#_seq=`seq 0.01 0.021 3.14`
+_seq=`seq 0.01 0.1 3.14`
 echo "new cycle "$_seq
 done
