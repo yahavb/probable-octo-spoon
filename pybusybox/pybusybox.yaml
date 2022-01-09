@@ -1,24 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pybusybox
+  name: appinsert
   labels:
-    app: pybusybox
+    app: appinsert
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pybusybox
+      app: appinsert
   template:
     metadata:
       labels:
-        app: pybusybox
+        app: appinsert
     spec:
-#      nodeSelector:
-#        karpenter.sh/provisioner-name: tenant1
+      nodeSelector:
+        eks.amazonaws.com/compute-type: fargate
+        #karpenter.sh/provisioner-name: tenant1
       containers:
-      - name: pybusybox
-        image: 652773884901.dkr.ecr.us-west-2.amazonaws.com/pybusybox:0.1
+      - name: appinsert
+        image: 498254202105.dkr.ecr.us-west-2.amazonaws.com/pybusybox:x86-0.2
         imagePullPolicy: Always
         env:
           - name: SLEEP_TIME
