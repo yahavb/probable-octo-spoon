@@ -194,3 +194,16 @@ aws iam attach-role-policy \
   --policy-arn arn:aws:iam::498254202105:policy/eks-fargate-logging-policy \
   --role-name AmazonEKSFargatePodExecutionRole
 ```
+
+
+# Enable fargate pods to assume IAM using IRSA
+
+```
+eksctl create iamserviceaccount \
+    --name appsimulator \
+    --namespace default \
+    --cluster fg-atvi-arm-us-west-2 \
+    --attach-policy-arn arn:aws:iam::652773884901:policy/appsimulator \
+    --approve \
+    --override-existing-serviceaccounts
+```
