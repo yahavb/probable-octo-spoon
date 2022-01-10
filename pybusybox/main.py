@@ -3,6 +3,7 @@ import signal
 import os
 import datetime
 import boto3
+import random
 
 cloudwatch = boto3.client('cloudwatch')
 
@@ -12,21 +13,27 @@ def sighandler(signum,frame):
   print('Signal handler was called with signal',signum)
 
 def main():
- client.put_metric_data(
-  Namespace='number of pods',
-  MetricData=[
-    {
-      'MetricName': 'numberOfPods',
-      'Dimensions': [
+  response = cloudwatch.put_metric_data(
+    MetricData = [
         {
-          'Name': 'numberofpods'
-          'Value': 'numberofpods'
+            'MetricName': 'NumOfJobs',
+            'Dimensions': [
+                {
+                    'Name': 'MetricName',
+                    'Value': 'NumOfJobsInvoked'
+                },
+                {
+                    'Name': 'APP_VERSION',
+                    'Value': 'x86-0.9'
+                },
+            ],
+            'Unit': 'Count',
+            'Value': 1
         },
-      'Unit': 'Count'
-      'Value': 1.0,
-      },
-    ]
+    ],
+    Namespace='pybusybox'
   )
+  print("response="+str(response))
   while True:
     print('{0} pybusybox going to sleep for {1} sec'.format(datetime.datetime.now(),_sleeptime))
     time.sleep(_sleeptime)
