@@ -7,7 +7,7 @@ Playing with EKS, Fargate, and Karpenter
 * Create AWS Identity and Access Management (IAM) OpenID Connect (OIDC) provider.
 
 ```
-aws eks describe-cluster --name fg-bliz-us-west-2 --query "cluster.identity.oidc.issuer" --output text
+aws eks describe-cluster --name arm-us-west-2 --query "cluster.identity.oidc.issuer" --output text
 https://oidc.eks.us-west-2.amazonaws.com/id/F9B0F7368F54F66E058DE79AF6B505C2
 
 $eksctl utils associate-iam-oidc-provider --cluster  fg-bliz-us-west-2 --approve
@@ -23,29 +23,45 @@ $eksctl utils associate-iam-oidc-provider --cluster  fg-bliz-us-west-2 --approve
 eksctl create iamserviceaccount \
     --name aws-node \
     --namespace kube-system \
-    --cluster fg-bliz-us-west-2 \
+    --cluster arm-us-west-2 \
     --attach-policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy \
     --approve \
     --override-existing-serviceaccounts
 ```
+discover the iamserviceaccount you just created, should be with AmazonEKS_CNI_Policy attached to it, and use it to create the addon
+
 
 ```
 eksctl create addon \
     --name vpc-cni \
     --version latest \
-    --cluster fg-bliz-us-west-2 \
-    --service-account-role-arn arn:aws:iam::498254202105:role/eksctl-fg-bliz-us-west-2-addon-iamserviceacc-Role1-1IXWZVWEIAJSF \
+    --cluster arm-us-west-2 \
+    --service-account-role-arn arn:aws:iam::584416962002:role/eksctl-arm-us-west-2-addon-iamserviceaccount-Role1-1E8IS7XB02PZ8 \
     --force
 ```
 
 * Deploy  the AWS Load Balancer Controller to an Amazon EKS cluster
 
+Tag the subnets you the target instances (pods) runs
+```bash
+SUBNET_IDS=$(aws cloudformation describe-stacks \
+    --stack-name eksctl-${CLUSTER_NAME}-cluster \
+    --query 'Stacks[].Outputs[?OutputKey==`SubnetsPublic`].OutputValue' \
+    --output text)
+aws ec2 create-tags \
+    --resources $(echo $SUBNET_IDS | tr ',' '\n') \
+    --tags Key="kubernetes.io/role/elb",Value=1
+aws ec2 create-tags \
+    --resources $(echo $SUBNET_IDS | tr ',' '\n') \
+    --tags Key="kubernetes.io/cluster/arm-us-west-2",Value=owned
+```
+
 ```bash
 curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.3.1/docs/install/iam_policy.json
 
 aws iam create-policy \
->     --policy-name AWSLoadBalancerControllerIAMPolicy \
->     --policy-document file://iam_policy.json
+     --policy-name AWSLoadBalancerControllerIAMPolicy \
+     --policy-document file://iam_policy.json
 {
     "Policy": {
         "PolicyName": "AWSLoadBalancerControllerIAMPolicy",
@@ -62,10 +78,10 @@ aws iam create-policy \
 }
 
 eksctl create iamserviceaccount \
-  --cluster=atvi-arm-us-west-2 \
+  --cluster=arm-us-west-2 \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
-  --attach-policy-arn=arn:aws:iam::652773884901:policy/AWSLoadBalancerControllerIAMPolicy \
+  --attach-policy-arn=arn:aws:iam::584416962002:policy/AWSLoadBalancerControllerIAMPolicy \
   --override-existing-serviceaccounts \
   --approve
 ```
@@ -75,17 +91,29 @@ helm repo add eks https://aws.github.io/eks-charts
 helm repo update
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=atvi-arm-us-west-2 \
+  --set clusterName=arm-us-west-2 \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller 
 
 kubectl get deployment -n kube-system aws-load-balancer-controller
 ```
 
+* Deploy container insights
+
+```
+ClusterName=arm-us-west-2
+RegionName=us-west-2
+FluentBitHttpPort='2020'
+FluentBitReadFromHead='Off'
+[[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On'
+[[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
+curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/'${ClusterName}'/;s/{{region_name}}/'${RegionName}'/;s/{{http_server_toggle}}/"'${FluentBitHttpServer}'"/;s/{{http_server_port}}/"'${FluentBitHttpPort}'"/;s/{{read_from_head}}/"'${FluentBitReadFromHead}'"/;s/{{read_from_tail}}/"'${FluentBitReadFromTail}'"/' | kubectl apply -f - 
+```
+
 * Deploy Karpenter
 
 ```bash
-export CLUSTER_NAME=atvi-arm-us-west-2
+export CLUSTER_NAME=stk-arm-us-west-2
 export AWS_DEFAULT_REGION=us-west-2
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
@@ -196,14 +224,14 @@ aws iam attach-role-policy \
 ```
 
 
-# Enable fargate pods to assume IAM using IRSA
+# Enable service account pods to assume IAM using IRSA
 
 ```
 eksctl create iamserviceaccount \
     --name appsimulator \
     --namespace default \
-    --cluster fg-atvi-arm-us-west-2 \
-    --attach-policy-arn arn:aws:iam::652773884901:policy/appsimulator \
+    --cluster arm-us-west-2 \
+    --attach-policy-arn arn:aws:iam::584416962002:policy/appsimulator \
     --approve \
     --override-existing-serviceaccounts
 ```
