@@ -7,7 +7,7 @@ Playing with EKS, Fargate, and Karpenter
 * Create AWS Identity and Access Management (IAM) OpenID Connect (OIDC) provider.
 
 ```
-aws eks describe-cluster --name arm-us-west-2 --query "cluster.identity.oidc.issuer" --output text
+aws eks describe-cluster --name bliz-ipv6-arm-usw-2 --query "cluster.identity.oidc.issuer" --output text
 https://oidc.eks.us-west-2.amazonaws.com/id/F9B0F7368F54F66E058DE79AF6B505C2
 
 $eksctl utils associate-iam-oidc-provider --cluster  fg-bliz-us-west-2 --approve
@@ -23,7 +23,7 @@ $eksctl utils associate-iam-oidc-provider --cluster  fg-bliz-us-west-2 --approve
 eksctl create iamserviceaccount \
     --name aws-node \
     --namespace kube-system \
-    --cluster arm-us-west-2 \
+    --cluster bliz-ipv6-arm-usw-2 \
     --attach-policy-arn arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy \
     --approve \
     --override-existing-serviceaccounts
@@ -35,8 +35,8 @@ discover the iamserviceaccount you just created, should be with AmazonEKS_CNI_Po
 eksctl create addon \
     --name vpc-cni \
     --version latest \
-    --cluster arm-us-west-2 \
-    --service-account-role-arn arn:aws:iam::584416962002:role/eksctl-arm-us-west-2-addon-iamserviceaccount-Role1-1E8IS7XB02PZ8 \
+    --cluster bliz-ipv6-arm-usw-2 \
+    --service-account-role-arn arn:aws:iam::498254202105:role/eksctl-bliz-ipv6-arm-usw-2-addon-iamservicea-Role1-1B9DTXPZ7ZCPO \
     --force
 ```
 
@@ -53,7 +53,7 @@ aws ec2 create-tags \
     --tags Key="kubernetes.io/role/elb",Value=1
 aws ec2 create-tags \
     --resources $(echo $SUBNET_IDS | tr ',' '\n') \
-    --tags Key="kubernetes.io/cluster/arm-us-west-2",Value=owned
+    --tags Key="kubernetes.io/cluster/bliz-ipv6-arm-usw-2",Value=owned
 ```
 
 ```bash
@@ -78,10 +78,10 @@ aws iam create-policy \
 }
 
 eksctl create iamserviceaccount \
-  --cluster=arm-us-west-2 \
+  --cluster=bliz-ipv6-arm-usw-2 \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
-  --attach-policy-arn=arn:aws:iam::584416962002:policy/AWSLoadBalancerControllerIAMPolicy \
+  --attach-policy-arn=arn:aws:iam::498254202105:policy/AWSLoadBalancerControllerIAMPolicy \
   --override-existing-serviceaccounts \
   --approve
 ```
@@ -91,9 +91,17 @@ helm repo add eks https://aws.github.io/eks-charts
 helm repo update
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=arm-us-west-2 \
+  --set clusterName=bliz-ipv6-arm-usw-2 \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller 
+
+helm upgrade aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=bliz-ipv6-arm-usw-2 \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set createIngressClassResource=true 
+
 
 kubectl get deployment -n kube-system aws-load-balancer-controller
 ```
@@ -101,7 +109,7 @@ kubectl get deployment -n kube-system aws-load-balancer-controller
 * Deploy container insights
 
 ```
-ClusterName=arm-us-west-2
+ClusterName=bliz-ipv6-arm-usw-2
 RegionName=us-west-2
 FluentBitHttpPort='2020'
 FluentBitReadFromHead='Off'
@@ -235,3 +243,26 @@ eksctl create iamserviceaccount \
     --approve \
     --override-existing-serviceaccounts
 ```
+
+
+eksctl create iamserviceaccount \
+  --cluster=bliz-ipv6-arm-usw-2 \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::498254202105:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=bliz-ipv6-arm-usw-2 \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller 
+
+
+helm upgrade aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=bliz-ipv6-arm-usw-2 \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set createIngressClassResource=true 
